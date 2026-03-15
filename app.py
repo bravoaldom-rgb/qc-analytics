@@ -172,9 +172,9 @@ authenticator = stauth.Authenticate(
     config["cookie"]["expiry_days"],
 )
 
-# ── Guardar estado de auth en session ─────────────────────────────────────────
-if "authenticated" not in st.session_state:
-    st.session_state["authenticated"] = False
+# ── Si ya hay sesión activa, ir directo al dashboard ──────────────────────────
+if st.session_state.get("authentication_status") is True:
+    st.switch_page("pages/dashboard.py")
 
 # ── Layout principal ───────────────────────────────────────────────────────────
 st.markdown('<div class="auth-card">', unsafe_allow_html=True)
@@ -194,21 +194,13 @@ with tab_login:
     auth_status = st.session_state.get("authentication_status")
 
     if auth_status is True:
-        name = st.session_state.get("name", "")
-        st.success(f"Bienvenido, {name}")
-        st.markdown(f"""
-        <meta http-equiv="refresh" content="1;url=/dashboard">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#4a5568;margin-top:12px;">
-        Redirigiendo al dashboard…
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("IR AL DASHBOARD →"):
-            st.switch_page("pages/dashboard.py")
+        # Redirigir automáticamente sin necesitar botón
+        st.switch_page("pages/dashboard.py")
 
     elif auth_status is False:
         st.error("Usuario o contraseña incorrectos")
 
-    elif auth_status is None:
+    else:
         st.markdown("""
         <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#4a5568;margin-top:8px;">
         Ingresa tus credenciales para acceder

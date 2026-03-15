@@ -419,37 +419,53 @@ with tab4:
         </div>
         """, unsafe_allow_html=True)
     else:
-        prompt_type = st.selectbox("TIPO DE ANÁLISIS", [
-            "Resumen rápido", "Análisis técnico", "Evaluación de riesgo",
-            "Tesis de inversión", "Perspectiva de resultados",
+        prompt_type = st.selectbox("¿QUÉ QUIERES SABER?", [
+            "¿Vale la pena invertir aquí?",
+            "¿Qué hace esta empresa y cómo gana dinero?",
+            "¿Qué tan arriesgada es esta inversión?",
+            "¿Es cara o barata esta acción ahora mismo?",
+            "¿Qué podría salir mal si invierto aquí?",
         ])
-        if st.button("EJECUTAR ANÁLISIS"):
+        st.markdown('<div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:#4a5568;margin-bottom:12px;">Explicación en lenguaje simple, sin tecnicismos</div>', unsafe_allow_html=True)
+
+        if st.button("ANALIZAR CON IA"):
             try:
                 import anthropic
                 client = anthropic.Anthropic(api_key=api_key)
 
                 context = f"""
-Ticker: {ticker_input}
-Precio: ${last:,.2f}  Cambio: {pct:+.2f}%
-Cap. Mercado: {fmt_large(info.get('marketCap'))}
-P/U: {info.get('trailingPE','N/A')}  Beta: {info.get('beta','N/A')}
+Empresa / Ticker: {ticker_input}
+Nombre: {info.get('longName', ticker_input)}
+Precio actual: ${last:,.2f}  Cambio hoy: {pct:+.2f}%
+Capitalización de mercado: {fmt_large(info.get('marketCap'))}
 Sector: {info.get('sector','N/A')}  Industria: {info.get('industry','N/A')}
-Máx. 52 sem: ${info.get('fiftyTwoWeekHigh',0):,.2f}  Mín. 52 sem: ${info.get('fiftyTwoWeekLow',0):,.2f}
-Ingresos: {fmt_large(info.get('totalRevenue'))}  Margen Neto: {info.get('profitMargins',0)*100:.1f}%
+País: {info.get('country','N/A')}
+Precio más alto en 52 semanas: ${info.get('fiftyTwoWeekHigh',0):,.2f}
+Precio más bajo en 52 semanas: ${info.get('fiftyTwoWeekLow',0):,.2f}
+P/U (veces que pagas por cada peso de ganancia): {info.get('trailingPE','N/A')}
+Beta (volatilidad vs mercado): {info.get('beta','N/A')}
+Ingresos totales: {fmt_large(info.get('totalRevenue'))}
+Margen de ganancia neta: {info.get('profitMargins',0)*100:.1f}%
+Rendimiento por dividendo: {info.get('dividendYield',0)*100:.2f}% si info.get('dividendYield') else 'No paga dividendos'
 """
                 system_msg = (
-                    "Eres un analista cuantitativo senior de una firma fintech. "
-                    "Responde en español, sé conciso y orientado a datos, usa formato markdown. "
-                    "Resalta números clave con **negrita**. Límite ~250 palabras."
+                    "Eres un asesor financiero amigable que ayuda a personas que NUNCA han invertido en bolsa. "
+                    "Tu misión es explicar todo en lenguaje cotidiano, como si le hablaras a un amigo de 25 años. "
+                    "NUNCA uses jerga financiera sin explicarla. "
+                    "Siempre empieza con una conclusión clara: 🟢 INTERESANTE, 🟡 CON CAUTELA, o 🔴 CON CUIDADO. "
+                    "Usa analogías simples para explicar conceptos (ej. 'el P/U es como cuántos años tardarías en recuperar tu dinero'). "
+                    "Termina siempre con 2-3 puntos concretos en bullets. "
+                    "Responde en español mexicano, cálido y directo. Máximo 280 palabras."
                 )
-                with st.spinner("Analizando…"):
+                with st.spinner("Analizando en lenguaje simple…"):
                     message = client.messages.create(
                         model="claude-opus-4-6",
-                        max_tokens=600,
+                        max_tokens=700,
                         system=system_msg,
-                        messages=[{"role":"user","content":f"Proporciona un {prompt_type} para:\n{context}"}],
+                        messages=[{"role":"user","content":f"Pregunta del usuario: {prompt_type}\n\nDatos de la acción:\n{context}"}],
                     )
                 result = message.content[0].text
-                st.markdown(f'<div style="background:#060810;border:1px solid #1e2530;border-left:3px solid #00d4aa;border-radius:6px;padding:18px;font-size:13px;line-height:1.7;">{result}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="background:#060810;border:1px solid #1e2530;border-left:3px solid #00d4aa;border-radius:6px;padding:20px;font-size:14px;line-height:1.8;">{result}</div>', unsafe_allow_html=True)
+                st.markdown('<div style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:#4a5568;margin-top:8px;">⚠ Esto es información educativa, no asesoría financiera profesional.</div>', unsafe_allow_html=True)
             except Exception as e:
                 st.error(f"Error IA: {e}")

@@ -235,9 +235,18 @@ with st.sidebar:
 
     ticker_input = st.text_input("TICKER", value="AAPL", placeholder="ej. MSFT, SPY, BTC-USD").upper().strip()
 
-    period_map = {"1D": ("1d","5m"), "5D": ("5d","15m"), "1M": ("1mo","1h"),
-                  "3M": ("3mo","1d"), "6M": ("6mo","1d"), "1A": ("1y","1d"),
-                  "2A": ("2y","1wk"), "5A": ("5y","1wk")}
+    period_map = {
+        "1D": ("1d",  "5m"),
+        "5D": ("5d",  "15m"),
+        "1M": ("1mo", "1h"),
+        "3M": ("3mo", "1d"),
+        "6M": ("6mo", "1d"),
+        "1A": ("1y",  "1d"),
+        "2A": ("2y",  "1wk"),
+        "3A": ("3y",  "1wk"),
+        "4A": ("4y",  "1wk"),
+        "5A": ("5y",  "1wk"),
+    }
     period_sel = st.select_slider("PERIODO", options=list(period_map.keys()), value="1A")
     period, interval = period_map[period_sel]
 
@@ -345,52 +354,20 @@ with tab1:
                        title=dict(text=f"{ticker_input} · {period_sel}", font=dict(size=13)))
     st.plotly_chart(fig, use_container_width=True)
 
-    if show_volume:
-        # ── Periodos disponibles para volumen ──────────────────────────────
-        VOL_MAP = {
-            "1D": ("1d",  "5m"),
-            "5D": ("5d",  "15m"),
-            "1M": ("1mo", "1h"),
-            "6M": ("6mo", "1d"),
-            "1A": ("1y",  "1d"),
-            "2A": ("2y",  "1wk"),
-            "3A": ("3y",  "1wk"),
-            "4A": ("4y",  "1wk"),
-            "5A": ("5y",  "1wk"),
-        }
-        vol_sel = st.radio(
-            "Periodo de volumen",
-            list(VOL_MAP.keys()),
-            index=4,               # default: 1A
-            horizontal=True,
-            key="vol_period",
-            label_visibility="collapsed",
+    if show_volume and "Volume" in df.columns:
+        vol_colors = ["#00d4aa" if c >= o else "#ff3b5c"
+                      for c, o in zip(df["Close"], df["Open"])]
+        vfig = go.Figure(go.Bar(
+            x=df.index, y=df["Volume"],
+            marker_color=vol_colors,
+            name="Volumen", opacity=0.75,
+        ))
+        vfig.update_layout(
+            **PLOTLY_LAYOUT, height=160,
+            yaxis_title="VOLUMEN", showlegend=False,
+            title=dict(text=f"VOLUMEN · {ticker_input} · {period_sel}", font=dict(size=11)),
         )
-        vp, vi = VOL_MAP[vol_sel]
-
-        with st.spinner(""):
-            vdf = get_price_data(ticker_input, vp, vi)
-
-        if not vdf.empty and "Volume" in vdf.columns:
-            vol_colors = [
-                "#00d4aa" if c >= o else "#ff3b5c"
-                for c, o in zip(vdf["Close"], vdf["Open"])
-            ]
-            vfig = go.Figure(go.Bar(
-                x=vdf.index, y=vdf["Volume"],
-                marker_color=vol_colors,
-                name="Volumen", opacity=0.75,
-            ))
-            vfig.update_layout(
-                **PLOTLY_LAYOUT, height=180,
-                yaxis_title="VOLUMEN",
-                showlegend=False,
-                title=dict(
-                    text=f"VOLUMEN · {ticker_input} · {vol_sel}",
-                    font=dict(size=11),
-                ),
-            )
-            st.plotly_chart(vfig, use_container_width=True)
+        st.plotly_chart(vfig, use_container_width=True)
 
 # ═══ TAB 2 · FUNDAMENTALS ════════════════════════════════════════════════════
 with tab2:

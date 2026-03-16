@@ -500,8 +500,10 @@ with tab_mc:
     # Controles
     ctrl1, ctrl2, ctrl3 = st.columns(3)
     with ctrl1:
+        if st.session_state.get("mc_sims") not in [1000, 2000, 5000, 10000]:
+            st.session_state["mc_sims"] = 1000
         n_sims = st.select_slider(
-            "SIMULACIONES", options=[200, 500, 1000, 2000], value=1000,
+            "SIMULACIONES", options=[1000, 2000, 5000, 10000], value=1000,
             key="mc_sims"
         )
     with ctrl2:

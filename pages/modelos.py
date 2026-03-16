@@ -110,7 +110,17 @@ def fmt_large(n):
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown('<div style="font-family:\'JetBrains Mono\',monospace;font-size:18px;font-weight:700;color:#00d4aa;letter-spacing:3px;padding-bottom:12px;border-bottom:1px solid #1e2530;margin-bottom:18px;">QC ANALYTICS</div>', unsafe_allow_html=True)
-    ticker = st.text_input("TICKER", value="AAPL", placeholder="ej. AAPL, GMEXICOB.MX").upper().strip()
+    # Ticker global compartido entre páginas
+    if "ticker_global" not in st.session_state:
+        st.session_state["ticker_global"] = "AAPL"
+    ticker = st.text_input(
+        "TICKER",
+        value=st.session_state["ticker_global"],
+        placeholder="ej. AAPL, GMEXICOB.MX",
+        key="ticker_modelos",
+    ).upper().strip()
+    if ticker:
+        st.session_state["ticker_global"] = ticker
     periodo = st.select_slider("PERIODO", options=["3M","6M","1A","2A","3A"], value="1A")
     periodo_map = {"3M":"3mo","6M":"6mo","1A":"1y","2A":"2y","3A":"3y"}
     st.markdown("---")

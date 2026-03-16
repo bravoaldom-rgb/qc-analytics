@@ -233,7 +233,17 @@ def fmt_large(n):
 with st.sidebar:
     st.markdown('<div style="font-family:\'JetBrains Mono\',monospace;font-size:18px;font-weight:700;color:#00d4aa;letter-spacing:3px;padding-bottom:12px;border-bottom:1px solid #1e2530;margin-bottom:18px;">QC ANALYTICS</div>', unsafe_allow_html=True)
 
-    ticker_input = st.text_input("TICKER", value="AAPL", placeholder="ej. MSFT, SPY, BTC-USD").upper().strip()
+    # Ticker global compartido entre páginas
+    if "ticker_global" not in st.session_state:
+        st.session_state["ticker_global"] = "AAPL"
+    ticker_input = st.text_input(
+        "TICKER",
+        value=st.session_state["ticker_global"],
+        placeholder="ej. MSFT, SPY, BTC-USD",
+        key="ticker_dashboard",
+    ).upper().strip()
+    if ticker_input:
+        st.session_state["ticker_global"] = ticker_input
 
     period_map = {
         "1D": ("1d",  "5m"),

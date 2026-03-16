@@ -321,17 +321,69 @@ tab1, tab2, tab3, tab4 = st.tabs(["  GRÁFICA  ", "  FUNDAMENTALES  ", "  COMPAR
 
 # ═══ TAB 1 · CHART ═══════════════════════════════════════════════════════════
 with tab1:
+
+    # ── Selector de tipo de gráfica ───────────────────────────────────────────
+    chart_col1, chart_col2 = st.columns([3, 1])
+    with chart_col2:
+        chart_type = st.radio(
+            "Tipo",
+            ["🕯 Velas", "⛰ Montaña"],
+            horizontal=True,
+            key="chart_type",
+            label_visibility="collapsed",
+        )
+
     fig = go.Figure()
 
-    # Candlestick
-    fig.add_trace(go.Candlestick(
-        x=df.index, open=df["Open"], high=df["High"],
-        low=df["Low"],  close=df["Close"],
-        name=ticker_input,
-        increasing_line_color="#00d4aa", increasing_fillcolor="rgba(0,212,170,0.15)",
-        decreasing_line_color="#ff3b5c", decreasing_fillcolor="rgba(255,59,92,0.15)",
-    ))
+    if chart_type == "⛰ Montaña":
+        # ── Estilo Yahoo Finance: línea + área rellena ────────────────────────
+        line_color  = "#00d4aa" if pct >= 0 else "#ff3b5c"
+        fill_color  = "rgba(0,212,170,0.12)" if pct >= 0 else "rgba(255,59,92,0.10)"
 
+        fig.add_trace(go.Scatter(
+            x=df.index,
+            y=close,
+            mode="lines",
+            name=ticker_input,
+            line=dict(color=line_color, width=1.8),
+            fill="tozeroy",
+            fillcolor=fill_color,
+            hovertemplate=(
+                "<b>%{x|%d %b %Y  %H:%M}</b><br>"
+                "Precio: <b>$%{y:,.2f}</b><extra></extra>"
+            ),
+        ))
+
+        # Punto final (precio actual)
+        fig.add_trace(go.Scatter(
+            x=[df.index[-1]],
+            y=[last],
+            mode="markers",
+            marker=dict(color=line_color, size=8, line=dict(color="#0a0c10", width=2)),
+            name="Actual",
+            hovertemplate=f"<b>Precio actual</b><br>${last:,.2f}<extra></extra>",
+        ))
+
+        # Línea horizontal del cierre anterior (guía)
+        fig.add_hline(
+            y=prev,
+            line_color=line_color,
+            line_dash="dot",
+            line_width=0.8,
+            opacity=0.4,
+        )
+
+    else:
+        # ── Candlestick ───────────────────────────────────────────────────────
+        fig.add_trace(go.Candlestick(
+            x=df.index, open=df["Open"], high=df["High"],
+            low=df["Low"], close=df["Close"],
+            name=ticker_input,
+            increasing_line_color="#00d4aa", increasing_fillcolor="rgba(0,212,170,0.15)",
+            decreasing_line_color="#ff3b5c", decreasing_fillcolor="rgba(255,59,92,0.15)",
+        ))
+
+    # ── Indicadores (aplican en ambos modos) ──────────────────────────────────
     if show_ma:
         for n, color in [(20,"#0090ff"),(50,"#f5c518"),(200,"#a855f7")]:
             if len(df) >= n:
@@ -341,7 +393,7 @@ with tab1:
                 ))
 
     if show_bb:
-        ma20 = close.rolling(20).mean()
+        ma20  = close.rolling(20).mean()
         std20 = close.rolling(20).std()
         fig.add_trace(go.Scatter(x=df.index, y=ma20+2*std20, name="BB+2σ",
                                   line=dict(color="#4a5568", width=1, dash="dot")))
@@ -349,9 +401,11 @@ with tab1:
                                   line=dict(color="#4a5568", width=1, dash="dot"),
                                   fill="tonexty", fillcolor="rgba(74,85,104,0.06)"))
 
-    fig.update_layout(**PLOTLY_LAYOUT, height=420,
-                       xaxis_rangeslider_visible=False,
-                       title=dict(text=f"{ticker_input} · {period_sel}", font=dict(size=13)))
+    fig.update_layout(
+        **PLOTLY_LAYOUT, height=440,
+        xaxis_rangeslider_visible=False,
+        title=dict(text=f"{ticker_input} · {period_sel}", font=dict(size=13)),
+    )
     st.plotly_chart(fig, use_container_width=True)
 
     if show_volume and "Volume" in df.columns:

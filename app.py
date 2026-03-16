@@ -3,7 +3,6 @@ import streamlit_authenticator as stauth
 import yaml
 from yaml.loader import SafeLoader
 from pathlib import Path
-import random
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -17,301 +16,244 @@ st.set_page_config(
 if st.session_state.get("authentication_status") is True:
     st.switch_page("pages/dashboard.py")
 
-# ── Generar velas ──────────────────────────────────────────────────────────────
-random.seed(42)
-candles_html = ""
-for i in range(32):
-    left   = (i / 32) * 100 + random.uniform(-1.2, 1.2)
-    left   = max(0.3, min(99, left))
-    body_h = random.randint(18, 190)
-    wick_t = random.randint(6, 38)
-    wick_b = random.randint(3, 18)
-    col    = "#00d4aa" if random.random() > 0.42 else "#ff3b5c"
-    spd    = random.uniform(2.5, 8.0)
-    dly    = random.uniform(0, 8)
-    op     = random.uniform(0.10, 0.28)
-    candles_html += (
-        f'<div class="qc-c" style="left:{left:.1f}%;'
-        f'animation-duration:{spd:.1f}s;animation-delay:-{dly:.2f}s;opacity:{op:.2f};">'
-        f'<div style="width:1.5px;height:{wick_t}px;background:{col};margin:0 auto;"></div>'
-        f'<div style="width:9px;height:{body_h}px;background:{col};border-radius:1px;"></div>'
-        f'<div style="width:1.5px;height:{wick_b}px;background:{col};margin:0 auto;"></div>'
-        f'</div>'
-    )
-
-# ── Ticker tape ────────────────────────────────────────────────────────────────
-TICKERS = [
-    ("AAPL","$182.63","+2.34%",True),  ("MSFT","$415.21","+1.12%",True),
-    ("TSLA","$234.15","-0.87%",False), ("NVDA","$875.42","+4.21%",True),
-    ("AMZN","$192.87","+0.94%",True),  ("META","$521.33","+1.67%",True),
-    ("GOOG","$172.54","-0.31%",False), ("SPY", "$524.11","+0.72%",True),
-    ("BTC", "$67,421","+3.15%",True),  ("ETH", "$3,842", "+2.08%",True),
-    ("AMX", "$14.23", "-1.24%",False), ("QQQ", "$447.23","+1.45%",True),
-    ("GLD", "$212.45","-0.19%",False), ("JPM", "$213.67","+0.63%",True),
-    ("CEMEX","$7.84", "-2.11%",False), ("WALMEX","$68.40","+1.33%",True),
-    ("IPC", "$55,242","+0.61%",True),  ("BIMBO","$88.12","+0.88%",True),
-]
-tape_inner = ""
-for sym, price, pct, up in TICKERS * 5:
-    col = "#00d4aa" if up else "#ff3b5c"
-    arr = "▲" if up else "▼"
-    tape_inner += (
-        f'<span style="margin:0 28px;white-space:nowrap;">'
-        f'<span style="color:#6b7a90;font-size:11px;letter-spacing:1px;">{sym} </span>'
-        f'<span style="color:#c9d1d9;font-size:11px;">{price} </span>'
-        f'<span style="color:{col};font-size:11px;">{arr} {pct}</span>'
-        f'</span>'
-    )
+# ── Toggle entre login / registro ─────────────────────────────────────────────
+if "show_register" not in st.session_state:
+    st.session_state.show_register = False
 
 # ── CSS ────────────────────────────────────────────────────────────────────────
-st.markdown(f"""
+st.markdown("""
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-  :root {{
-    --bg:      #0a0c10;
-    --surface: #111419;
-    --border:  #1e2530;
-    --accent:  #00d4aa;
-    --red:     #ff3b5c;
-    --text:    #c9d1d9;
-    --muted:   #4a5568;
-  }}
+  :root {
+    --bg:       #080a0f;
+    --surface:  #0f1117;
+    --border:   rgba(255,255,255,0.07);
+    --accent:   #00d4aa;
+    --text:     #f1f3f5;
+    --sub:      #6b7280;
+    --error:    #f87171;
+  }
 
-  html, body {{
-    background-color: var(--bg) !important;
-    margin: 0; padding: 0;
-  }}
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body,
   [data-testid="stAppViewContainer"],
-  [data-testid="stMain"] {{
-    background: transparent !important;
-  }}
+  [data-testid="stMain"] {
+    background: var(--bg) !important;
+    font-family: 'Inter', sans-serif !important;
+    color: var(--text) !important;
+    margin: 0; padding: 0;
+  }
+
+  /* Ocultar chrome de Streamlit */
   [data-testid="stSidebar"],
   [data-testid="collapsedControl"],
   [data-testid="stDecoration"],
-  header[data-testid="stHeader"] {{ display: none !important; }}
-  .block-container {{ padding-top: 0 !important; max-width: 480px !important; }}
+  header[data-testid="stHeader"],
+  [data-testid="stToolbar"],
+  #MainMenu { display: none !important; }
 
-  /* ── Fondo ── */
-  .qc-bg {{
-    position: fixed; inset: 0; z-index: 0;
-    background: #0a0c10; overflow: hidden;
-  }}
-  .qc-grid {{
-    position: absolute; inset: 0;
-    background-image:
-      linear-gradient(rgba(0,212,170,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,212,170,0.04) 1px, transparent 1px);
-    background-size: 60px 60px;
-  }}
-  .qc-vignette {{
-    position: absolute; inset: 0;
-    background: radial-gradient(
-      ellipse 70% 80% at 50% 50%,
-      rgba(10,12,16,0.92) 0%,
-      rgba(10,12,16,0.60) 55%,
-      transparent 100%
-    );
-  }}
+  .block-container {
+    max-width: 420px !important;
+    padding: 0 24px 60px 24px !important;
+    margin: 0 auto !important;
+  }
 
-  /* Velas */
-  .qc-c {{
-    position: absolute; bottom: 56px;
-    display: flex; flex-direction: column;
-    justify-content: flex-end; align-items: center;
-    transform-origin: bottom center;
-    animation: qcPulse linear infinite alternate;
-  }}
-  @keyframes qcPulse {{
-    0%   {{ transform: scaleY(0.45); }}
-    100% {{ transform: scaleY(1.05); }}
-  }}
-
-  /* Líneas */
-  .qc-line {{
-    position: absolute; left: 0; right: 0;
-    height: 1px; animation: linePulse ease-in-out infinite alternate;
-  }}
-  .qc-line-1 {{ top:22%; background:linear-gradient(90deg,transparent,#00d4aa,transparent); animation-duration:4.2s; opacity:.15; }}
-  .qc-line-2 {{ top:40%; background:linear-gradient(90deg,transparent,#0090ff,transparent); animation-duration:5.8s; animation-delay:-2s; opacity:.12; }}
-  .qc-line-3 {{ top:62%; background:linear-gradient(90deg,transparent,#a855f7,transparent); animation-duration:3.5s; animation-delay:-1s; opacity:.10; }}
-  @keyframes linePulse {{
-    0%   {{ opacity:.04; transform:scaleX(.6); }}
-    100% {{ opacity:.20; transform:scaleX(1); }}
-  }}
-
-  /* Puntos flotantes */
-  .qc-dot {{
-    position: absolute; width:3px; height:3px;
-    border-radius:50%; background:#00d4aa; opacity:.2;
-    animation: floatUp linear infinite;
-  }}
-  @keyframes floatUp {{
-    0%   {{ transform:translateY(0);     opacity:.2; }}
-    100% {{ transform:translateY(-100vh); opacity:0; }}
-  }}
-
-  /* Ticker tape */
-  .qc-tape-wrap {{
-    position: absolute; bottom:0; left:0; right:0;
-    height:36px; background:rgba(17,20,25,.85);
-    border-top:1px solid var(--border);
-    display:flex; align-items:center;
-    overflow:hidden; z-index:2;
-  }}
-  .qc-tape {{
-    display:flex; align-items:center;
-    font-family:'JetBrains Mono',monospace; white-space:nowrap;
-    animation: tickerScroll 80s linear infinite;
-  }}
-  @keyframes tickerScroll {{
-    0%   {{ transform:translateX(0); }}
-    100% {{ transform:translateX(-50%); }}
-  }}
+  /* Glow de fondo muy sutil */
+  [data-testid="stAppViewContainer"]::before {
+    content: '';
+    position: fixed;
+    top: -30%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(0,212,170,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
 
   /* ── Logo ── */
-  .qc-logo-wrap {{
-    text-align:center; margin-bottom:28px;
-    position:relative; z-index:10;
-  }}
-  .qc-logo-main {{
-    font-family:'JetBrains Mono',monospace;
-    font-size:54px; font-weight:700;
-    color:var(--accent); letter-spacing:8px; line-height:1;
-    text-shadow:0 0 40px rgba(0,212,170,.35);
-  }}
-  .qc-logo-sub {{
-    font-family:'JetBrains Mono',monospace;
-    font-size:11px; color:var(--muted);
-    letter-spacing:5px; margin-top:4px;
-  }}
-  .qc-logo-desc {{
-    font-family:'Inter',sans-serif;
-    font-size:14px; color:#5a6478;
-    margin-top:10px;
-  }}
-
-  /* ── Cards ── */
-  .auth-card {{
-    background: rgba(17,20,25,.92);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-    border: 1px solid rgba(0,212,170,.12);
-    border-radius: 14px;
-    padding: 32px 36px 28px 36px;
-    width: 100%;
-    box-shadow: 0 8px 60px rgba(0,0,0,.7), 0 0 0 1px rgba(0,212,170,.04);
-    position: relative; z-index: 10;
-  }}
-  .card-title {{
-    font-family:'JetBrains Mono',monospace;
-    font-size:11px; font-weight:700;
-    letter-spacing:2.5px; color:var(--accent);
-    text-transform:uppercase; margin-bottom:20px;
-    display:flex; align-items:center; gap:8px;
-  }}
-  .card-title::after {{
-    content:'';
-    flex:1; height:1px;
-    background:linear-gradient(90deg,var(--border),transparent);
-  }}
-
-  .divider-section {{
-    position:relative; z-index:10;
-    text-align:center; margin:20px 0;
-    display:flex; align-items:center; gap:14px;
-  }}
-  .divider-line {{
-    flex:1; height:1px; background:var(--border);
-  }}
-  .divider-text {{
-    font-family:'JetBrains Mono',monospace;
-    font-size:10px; color:var(--muted);
-    letter-spacing:2px; white-space:nowrap;
-  }}
+  .logo-block {
+    text-align: center;
+    padding: 64px 0 44px 0;
+  }
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; height: 44px;
+    background: rgba(0,212,170,0.10);
+    border: 1px solid rgba(0,212,170,0.20);
+    border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+  }
+  .logo-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.4px;
+    margin-bottom: 6px;
+  }
+  .logo-sub {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--sub);
+    letter-spacing: 0;
+  }
 
   /* ── Inputs ── */
-  .stTextInput > div > div > input {{
-    background: rgba(6,8,16,.9) !important;
+  .stTextInput { margin-bottom: 2px !important; }
+
+  .stTextInput > div > div > input {
+    background: var(--surface) !important;
     border: 1px solid var(--border) !important;
     color: var(--text) !important;
-    font-family: 'JetBrains Mono',monospace !important;
-    font-size: 13px !important;
-    border-radius: 8px !important;
-    padding: 10px 14px !important;
-    transition: border-color .2s, box-shadow .2s !important;
-  }}
-  .stTextInput > div > div > input:focus {{
-    border-color: var(--accent) !important;
-    box-shadow: 0 0 0 3px rgba(0,212,170,.10) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    border-radius: 10px !important;
+    padding: 12px 14px !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+    width: 100% !important;
+  }
+  .stTextInput > div > div > input::placeholder {
+    color: #374151 !important;
+  }
+  .stTextInput > div > div > input:focus {
+    border-color: rgba(0,212,170,0.5) !important;
+    box-shadow: 0 0 0 3px rgba(0,212,170,0.08) !important;
     outline: none !important;
-  }}
-  label[data-testid="stWidgetLabel"] p {{
-    font-family: 'JetBrains Mono',monospace !important;
-    font-size: 10px !important; color: var(--muted) !important;
-    letter-spacing: 1.5px !important; text-transform: uppercase !important;
-  }}
+    background: #0d1018 !important;
+  }
 
-  /* ── Botón principal (login) ── */
-  .stButton > button {{
+  /* Labels */
+  label[data-testid="stWidgetLabel"] p {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #9ca3af !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+    margin-bottom: 6px !important;
+  }
+
+  /* ── Botón primario (login) ── */
+  .stButton > button {
     background: var(--accent) !important;
-    border: none !important; color: #0a0c10 !important;
-    font-family: 'JetBrains Mono',monospace !important;
-    font-size: 12px !important; font-weight: 700 !important;
-    letter-spacing: 2px !important; border-radius: 8px !important;
-    padding: 12px 24px !important; width: 100% !important;
-    margin-top: 6px !important; transition: all .2s !important;
-    box-shadow: 0 4px 20px rgba(0,212,170,.15) !important;
-  }}
-  .stButton > button:hover {{
-    opacity:.88 !important; transform:translateY(-1px) !important;
-    box-shadow: 0 6px 28px rgba(0,212,170,.28) !important;
-  }}
-  .stButton > button:active {{ transform:translateY(0) !important; }}
+    border: none !important;
+    color: #050810 !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.1px !important;
+    border-radius: 10px !important;
+    padding: 13px 20px !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+  }
+  .stButton > button:hover {
+    background: #00bfa0 !important;
+    box-shadow: 0 4px 24px rgba(0,212,170,0.22) !important;
+    transform: translateY(-1px) !important;
+  }
+  .stButton > button:active { transform: translateY(0) !important; }
 
-  /* ── Botón secundario (registro) ── */
-  .stFormSubmitButton > button {{
+  /* ── Botón registro (outline) ── */
+  .stFormSubmitButton > button {
     background: transparent !important;
-    border: 1px solid var(--accent) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    letter-spacing: -0.1px !important;
+    border-radius: 10px !important;
+    padding: 13px 20px !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+  }
+  .stFormSubmitButton > button:hover {
+    border-color: rgba(255,255,255,0.16) !important;
+    background: rgba(255,255,255,0.03) !important;
+  }
+
+  /* ── Switch link ── */
+  .switch-link {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 13px;
+    color: var(--sub);
+  }
+  .switch-link a, .switch-link strong {
     color: var(--accent) !important;
-    font-family: 'JetBrains Mono',monospace !important;
-    font-size: 12px !important; font-weight: 600 !important;
-    letter-spacing: 2px !important; border-radius: 8px !important;
-    padding: 11px 24px !important; width: 100% !important;
-    margin-top: 6px !important; transition: all .2s !important;
-  }}
-  .stFormSubmitButton > button:hover {{
-    background: rgba(0,212,170,.08) !important;
-    box-shadow: 0 0 0 1px var(--accent) !important;
-  }}
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+  }
 
-  /* Alerts */
-  .stAlert {{
-    border-radius: 8px !important;
-    font-family: 'JetBrains Mono',monospace !important;
-    font-size: 12px !important; border: none !important;
-  }}
-  /* Ocultar form name vacío */
-  [data-testid="stForm"] > div:first-child > div:first-child:empty {{ display:none; }}
+  /* ── Divider ── */
+  .soft-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .soft-divider span {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .soft-divider p {
+    font-size: 12px;
+    color: #374151;
+    white-space: nowrap;
+  }
+
+  /* ── Alerts ── */
+  [data-testid="stAlert"] {
+    background: rgba(248,113,113,0.07) !important;
+    border: 1px solid rgba(248,113,113,0.18) !important;
+    border-radius: 10px !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 13px !important;
+    color: #fca5a5 !important;
+  }
+  [data-testid="stAlert"][data-baseweb="notification"] {
+    padding: 12px 14px !important;
+  }
+
+  /* Éxito */
+  .success-box {
+    background: rgba(0,212,170,0.07);
+    border: 1px solid rgba(0,212,170,0.18);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--accent);
+    margin-top: 12px;
+    text-align: center;
+  }
+
+  /* Footer */
+  .auth-footer {
+    text-align: center;
+    font-size: 11px;
+    color: #1f2937;
+    margin-top: 48px;
+    letter-spacing: 0.3px;
+  }
 </style>
-
-<!-- FONDO -->
-<div class="qc-bg">
-  <div class="qc-grid"></div>
-  <div class="qc-line qc-line-1"></div>
-  <div class="qc-line qc-line-2"></div>
-  <div class="qc-line qc-line-3"></div>
-  {candles_html}
-  <div class="qc-dot" style="left:12%;animation-duration:12s;animation-delay:-3s;"></div>
-  <div class="qc-dot" style="left:27%;animation-duration:18s;animation-delay:-7s;"></div>
-  <div class="qc-dot" style="left:45%;animation-duration:15s;animation-delay:-1s;"></div>
-  <div class="qc-dot" style="left:63%;animation-duration:20s;animation-delay:-9s;"></div>
-  <div class="qc-dot" style="left:82%;animation-duration:13s;animation-delay:-5s;"></div>
-  <div class="qc-vignette"></div>
-  <div class="qc-tape-wrap">
-    <div class="qc-tape">{tape_inner}{tape_inner}</div>
-  </div>
-</div>
 """, unsafe_allow_html=True)
 
 # ── Credentials ────────────────────────────────────────────────────────────────
@@ -340,79 +282,76 @@ authenticator = stauth.Authenticate(
 )
 
 # ── Logo ───────────────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="qc-logo-wrap">
-  <div class="qc-logo-main">QC</div>
-  <div class="qc-logo-sub">ANALYTICS · TERMINAL</div>
-  <div class="qc-logo-desc">Analiza cualquier acción en segundos, en español.</div>
+if st.session_state.show_register:
+    headline = "Crea tu cuenta"
+    subline  = "Empieza a invertir con inteligencia."
+else:
+    headline = "Bienvenido de vuelta"
+    subline  = "Ingresa a tu terminal financiera."
+
+st.markdown(f"""
+<div class="logo-block">
+  <div class="logo-mark">QC</div>
+  <div class="logo-title">{headline}</div>
+  <div class="logo-sub">{subline}</div>
 </div>
 """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SECCIÓN 1 — INICIAR SESIÓN
+# FORMULARIO LOGIN
 # ══════════════════════════════════════════════════════════════════════════════
-st.markdown('<div class="auth-card">', unsafe_allow_html=True)
-st.markdown('<div class="card-title">Iniciar sesión</div>', unsafe_allow_html=True)
+if not st.session_state.show_register:
+    try:
+        authenticator.login(location="main", key="login_form")
+    except Exception as e:
+        st.error(f"Error: {e}")
 
-try:
-    authenticator.login(location="main", key="login_form")
-except Exception as e:
-    st.error(f"Error: {e}")
+    status = st.session_state.get("authentication_status")
+    if status is True:
+        st.switch_page("pages/dashboard.py")
+    elif status is False:
+        st.error("Usuario o contraseña incorrectos.")
 
-status = st.session_state.get("authentication_status")
-if status is True:
-    st.switch_page("pages/dashboard.py")
-elif status is False:
-    st.error("⚠ Usuario o contraseña incorrectos.")
-
-st.markdown('</div>', unsafe_allow_html=True)
-
-# ── Divisor ────────────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="divider-section">
-  <div class="divider-line"></div>
-  <div class="divider-text">¿NO TIENES CUENTA?</div>
-  <div class="divider-line"></div>
-</div>
-""", unsafe_allow_html=True)
+    st.markdown('<div class="switch-link">¿No tienes cuenta?</div>', unsafe_allow_html=True)
+    if st.button("Crear cuenta gratis →", key="go_register"):
+        st.session_state.show_register = True
+        st.rerun()
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SECCIÓN 2 — CREAR CUENTA (formulario propio — sin captcha, sin password hint)
+# FORMULARIO REGISTRO
 # ══════════════════════════════════════════════════════════════════════════════
-st.markdown('<div class="auth-card">', unsafe_allow_html=True)
-st.markdown('<div class="card-title">Crear cuenta</div>', unsafe_allow_html=True)
+else:
+    with st.form("register_form", clear_on_submit=True):
+        nombre  = st.text_input("Nombre completo")
+        usuario = st.text_input("Usuario")
+        correo  = st.text_input("Correo electrónico")
+        pwd     = st.text_input("Contraseña",          type="password")
+        pwd2    = st.text_input("Confirmar contraseña", type="password")
+        submit  = st.form_submit_button("Crear cuenta")
 
-with st.form("register_form", clear_on_submit=True):
-    nombre   = st.text_input("Nombre completo")
-    usuario  = st.text_input("Usuario")
-    correo   = st.text_input("Correo electrónico")
-    pwd      = st.text_input("Contraseña",         type="password")
-    pwd2     = st.text_input("Confirmar contraseña", type="password")
-    submit   = st.form_submit_button("CREAR CUENTA →")
+    if submit:
+        if not all([nombre, usuario, correo, pwd, pwd2]):
+            st.error("Completa todos los campos.")
+        elif pwd != pwd2:
+            st.error("Las contraseñas no coinciden.")
+        elif len(pwd) < 6:
+            st.error("La contraseña debe tener al menos 6 caracteres.")
+        elif usuario in config["credentials"]["usernames"]:
+            st.error("Ese nombre de usuario ya existe.")
+        elif any(u["email"] == correo for u in config["credentials"]["usernames"].values()):
+            st.error("Ese correo ya está registrado.")
+        else:
+            hashed = stauth.Hasher([pwd]).generate()[0]
+            config["credentials"]["usernames"][usuario] = {
+                "name": nombre, "email": correo, "password": hashed,
+            }
+            save_config(config)
+            st.markdown('<div class="success-box">✓ Cuenta creada. Ya puedes iniciar sesión.</div>', unsafe_allow_html=True)
 
-if submit:
-    # Validaciones
-    if not all([nombre, usuario, correo, pwd, pwd2]):
-        st.error("⚠ Completa todos los campos.")
-    elif pwd != pwd2:
-        st.error("⚠ Las contraseñas no coinciden.")
-    elif len(pwd) < 6:
-        st.error("⚠ La contraseña debe tener mínimo 6 caracteres.")
-    elif usuario in config["credentials"]["usernames"]:
-        st.warning("⚠ Ese nombre de usuario ya existe.")
-    elif any(
-        u["email"] == correo
-        for u in config["credentials"]["usernames"].values()
-    ):
-        st.warning("⚠ Ese correo ya está registrado.")
-    else:
-        hashed = stauth.Hasher([pwd]).generate()[0]
-        config["credentials"]["usernames"][usuario] = {
-            "name":     nombre,
-            "email":    correo,
-            "password": hashed,
-        }
-        save_config(config)
-        st.success("✅ Cuenta creada. Ya puedes iniciar sesión arriba.")
+    st.markdown('<div class="switch-link">¿Ya tienes cuenta?</div>', unsafe_allow_html=True)
+    if st.button("← Iniciar sesión", key="go_login"):
+        st.session_state.show_register = False
+        st.rerun()
 
-st.markdown('</div>', unsafe_allow_html=True)
+# ── Footer ─────────────────────────────────────────────────────────────────────
+st.markdown('<div class="auth-footer">QC Analytics · Datos: Yahoo Finance · IA: Claude</div>', unsafe_allow_html=True)

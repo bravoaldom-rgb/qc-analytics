@@ -61,6 +61,10 @@ st.markdown("""
     border-right: 1px solid var(--border) !important;
   }
 
+  /* Ocultar navegación automática de Streamlit */
+  [data-testid="stSidebarNav"] { display: none !important; }
+  section[data-testid="stSidebar"] > div:first-child { padding-top: 0 !important; }
+
   /* Header */
   .qc-header {
     display: flex;

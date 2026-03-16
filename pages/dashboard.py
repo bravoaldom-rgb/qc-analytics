@@ -157,6 +157,37 @@ st.markdown("""
   .stSlider > div > div { background: var(--border) !important; }
   div[data-baseweb="tab-list"] { border-bottom: 1px solid var(--border) !important; }
   div[data-baseweb="tab"] { font-family: var(--mono) !important; font-size: 12px !important; }
+
+  /* ── Selector de periodo de volumen ── */
+  div[data-testid="stRadio"] > div {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    margin-top: 6px !important;
+  }
+  div[data-testid="stRadio"] label {
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 4px !important;
+    padding: 3px 10px !important;
+    cursor: pointer !important;
+    font-family: var(--mono) !important;
+    font-size: 11px !important;
+    color: var(--muted) !important;
+    letter-spacing: .8px !important;
+    transition: all .15s !important;
+  }
+  div[data-testid="stRadio"] label:hover {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+  }
+  div[data-testid="stRadio"] label:has(input:checked) {
+    background: rgba(0,212,170,0.08) !important;
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+  }
+  div[data-testid="stRadio"] input[type="radio"] { display: none !important; }
+  div[data-testid="stRadio"] > label { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -314,16 +345,52 @@ with tab1:
                        title=dict(text=f"{ticker_input} · {period_sel}", font=dict(size=13)))
     st.plotly_chart(fig, use_container_width=True)
 
-    if show_volume and "Volume" in df.columns:
-        vol_colors = ["#00d4aa" if c >= o else "#ff3b5c"
-                      for c, o in zip(df["Close"], df["Open"])]
-        vfig = go.Figure(go.Bar(
-            x=df.index, y=df["Volume"], marker_color=vol_colors,
-            name="Volume", opacity=0.7,
-        ))
-        vfig.update_layout(**PLOTLY_LAYOUT, height=150,
-                            yaxis_title="VOLUMEN", showlegend=False)
-        st.plotly_chart(vfig, use_container_width=True)
+    if show_volume:
+        # ── Periodos disponibles para volumen ──────────────────────────────
+        VOL_MAP = {
+            "1D": ("1d",  "5m"),
+            "5D": ("5d",  "15m"),
+            "1M": ("1mo", "1h"),
+            "6M": ("6mo", "1d"),
+            "1A": ("1y",  "1d"),
+            "2A": ("2y",  "1wk"),
+            "3A": ("3y",  "1wk"),
+            "4A": ("4y",  "1wk"),
+            "5A": ("5y",  "1wk"),
+        }
+        vol_sel = st.radio(
+            "Periodo de volumen",
+            list(VOL_MAP.keys()),
+            index=4,               # default: 1A
+            horizontal=True,
+            key="vol_period",
+            label_visibility="collapsed",
+        )
+        vp, vi = VOL_MAP[vol_sel]
+
+        with st.spinner(""):
+            vdf = get_price_data(ticker_input, vp, vi)
+
+        if not vdf.empty and "Volume" in vdf.columns:
+            vol_colors = [
+                "#00d4aa" if c >= o else "#ff3b5c"
+                for c, o in zip(vdf["Close"], vdf["Open"])
+            ]
+            vfig = go.Figure(go.Bar(
+                x=vdf.index, y=vdf["Volume"],
+                marker_color=vol_colors,
+                name="Volumen", opacity=0.75,
+            ))
+            vfig.update_layout(
+                **PLOTLY_LAYOUT, height=180,
+                yaxis_title="VOLUMEN",
+                showlegend=False,
+                title=dict(
+                    text=f"VOLUMEN · {ticker_input} · {vol_sel}",
+                    font=dict(size=11),
+                ),
+            )
+            st.plotly_chart(vfig, use_container_width=True)
 
 # ═══ TAB 2 · FUNDAMENTALS ════════════════════════════════════════════════════
 with tab2:

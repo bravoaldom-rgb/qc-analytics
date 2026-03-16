@@ -1,6 +1,7 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -256,8 +257,8 @@ nombre = info.get("longName", ticker)
 st.markdown(f"### {ticker} &nbsp;·&nbsp; {nombre}")
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab_rsi, tab_macd, tab_sr, tab_health = st.tabs([
-    "  RSI  ", "  MACD  ", "  SOPORTE / RESISTENCIA  ", "  SALUD FINANCIERA  "
+tab_rsi, tab_macd, tab_sr, tab_health, tab_mc = st.tabs([
+    "  RSI  ", "  MACD  ", "  SOPORTE / RESISTENCIA  ", "  SALUD FINANCIERA  ", "  MONTE CARLO  "
 ])
 
 # ═══ RSI ══════════════════════════════════════════════════════════════════════
@@ -475,3 +476,206 @@ with tab_health:
                           font-weight:700;">{val}</div>
             </div>
             """, unsafe_allow_html=True)
+
+# ═══ MONTE CARLO ══════════════════════════════════════════════════════════════
+with tab_mc:
+    st.markdown("""
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#4a5568;
+                margin-bottom:20px;line-height:1.7;">
+    Simula miles de escenarios futuros posibles basados en la volatilidad histórica
+    de la acción. No predice el futuro — muestra el <b style="color:#c9d1d9;">abanico de probabilidades</b>.
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Controles
+    ctrl1, ctrl2, ctrl3 = st.columns(3)
+    with ctrl1:
+        n_sims = st.select_slider(
+            "SIMULACIONES", options=[200, 500, 1000, 2000], value=1000,
+            key="mc_sims"
+        )
+    with ctrl2:
+        horizonte = st.select_slider(
+            "HORIZONTE (días)", options=[30, 60, 90, 180, 252, 504],
+            value=252, key="mc_horizon",
+            format_func=lambda x: {
+                30:"1 mes", 60:"2 meses", 90:"3 meses",
+                180:"6 meses", 252:"1 año", 504:"2 años"
+            }[x]
+        )
+    with ctrl3:
+        inversion = st.number_input(
+            "INVERSIÓN INICIAL ($)", min_value=100,
+            max_value=1_000_000, value=10_000, step=1000,
+            key="mc_inv"
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Cálculo Monte Carlo ────────────────────────────────────────────────────
+    retornos = close.pct_change().dropna()
+    mu       = float(retornos.mean())
+    sigma    = float(retornos.std())
+    S0       = precio_act
+    dt       = 1  # 1 día
+
+    np.random.seed(42)
+    # Movimiento Browniano Geométrico: S(t) = S(t-1)*exp((μ-σ²/2)dt + σ√dt·Z)
+    Z         = np.random.standard_normal((horizonte, n_sims))
+    drift     = (mu - 0.5 * sigma**2) * dt
+    diffusion = sigma * np.sqrt(dt) * Z
+    precios   = np.zeros((horizonte + 1, n_sims))
+    precios[0] = S0
+    for t in range(1, horizonte + 1):
+        precios[t] = precios[t - 1] * np.exp(drift + diffusion[t - 1])
+
+    finales   = precios[-1]
+    pct_5     = np.percentile(finales, 5)
+    pct_25    = np.percentile(finales, 25)
+    pct_50    = np.percentile(finales, 50)
+    pct_75    = np.percentile(finales, 75)
+    pct_95    = np.percentile(finales, 95)
+    prob_gain = float((finales > S0).mean() * 100)
+
+    # Percentiles en el tiempo
+    p5_t  = np.percentile(precios, 5,  axis=1)
+    p25_t = np.percentile(precios, 25, axis=1)
+    p50_t = np.percentile(precios, 50, axis=1)
+    p75_t = np.percentile(precios, 75, axis=1)
+    p95_t = np.percentile(precios, 95, axis=1)
+    dias  = list(range(horizonte + 1))
+
+    # ── Gráfica ────────────────────────────────────────────────────────────────
+    col_gr, col_stats = st.columns([2, 1])
+
+    with col_gr:
+        fig_mc = go.Figure()
+
+        # Banda exterior 5-95%
+        fig_mc.add_trace(go.Scatter(
+            x=dias + dias[::-1], y=list(p95_t) + list(p5_t[::-1]),
+            fill="toself", fillcolor="rgba(0,144,255,0.06)",
+            line=dict(color="rgba(0,0,0,0)"),
+            name="Rango 5%–95%", hoverinfo="skip",
+        ))
+        # Banda interior 25-75%
+        fig_mc.add_trace(go.Scatter(
+            x=dias + dias[::-1], y=list(p75_t) + list(p25_t[::-1]),
+            fill="toself", fillcolor="rgba(0,144,255,0.12)",
+            line=dict(color="rgba(0,0,0,0)"),
+            name="Rango 25%–75%", hoverinfo="skip",
+        ))
+        # Percentil 95
+        fig_mc.add_trace(go.Scatter(
+            x=dias, y=p95_t, name="Optimista (95%)",
+            line=dict(color="#00d4aa", width=1.2, dash="dot"), opacity=0.7,
+        ))
+        # Percentil 50 (mediana)
+        fig_mc.add_trace(go.Scatter(
+            x=dias, y=p50_t, name="Mediana (50%)",
+            line=dict(color="#f5c518", width=2),
+        ))
+        # Percentil 5
+        fig_mc.add_trace(go.Scatter(
+            x=dias, y=p5_t, name="Pesimista (5%)",
+            line=dict(color="#ff3b5c", width=1.2, dash="dot"), opacity=0.7,
+        ))
+        # Precio actual (línea base)
+        fig_mc.add_hline(
+            y=S0, line_color="#4a5568", line_dash="dash", line_width=1,
+            annotation_text=f"Hoy ${S0:,.2f}",
+            annotation_font_color="#4a5568",
+        )
+
+        # Muestra 80 trayectorias aleatorias muy transparentes
+        sample_idx = np.random.choice(n_sims, size=min(80, n_sims), replace=False)
+        for i in sample_idx:
+            fig_mc.add_trace(go.Scatter(
+                x=dias, y=precios[:, i],
+                mode="lines", line=dict(color="rgba(0,144,255,0.05)", width=0.5),
+                showlegend=False, hoverinfo="skip",
+            ))
+
+        fig_mc.update_layout(
+            **PLOTLY_LAYOUT, height=440,
+            title=dict(
+                text=f"Monte Carlo · {ticker} · {n_sims:,} simulaciones · {horizonte} días",
+                font=dict(size=12)
+            ),
+            xaxis_title="Días",
+            yaxis_title="Precio ($)",
+        )
+        st.plotly_chart(fig_mc, use_container_width=True)
+
+    with col_stats:
+        # KPIs de la simulación
+        ret_med   = (pct_50 - S0) / S0 * 100
+        ret_opt   = (pct_95 - S0) / S0 * 100
+        ret_pes   = (pct_5  - S0) / S0 * 100
+        val_med   = inversion * (1 + ret_med / 100)
+        val_opt   = inversion * (1 + ret_opt / 100)
+        val_pes   = inversion * (1 + ret_pes / 100)
+        gain_col  = "#00d4aa" if prob_gain >= 50 else "#ff3b5c"
+
+        st.markdown(f"""
+        <div class="score-card" style="margin-bottom:10px;">
+          <div class="score-label">PROBABILIDAD DE GANANCIA</div>
+          <div class="score-val" style="color:{gain_col};font-size:40px;">{prob_gain:.0f}%</div>
+          <div class="score-desc">de las {n_sims:,} simulaciones terminan en positivo</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        escenarios = [
+            ("🟢 OPTIMISTA (5% superior)",  pct_95, ret_opt, val_opt, "#00d4aa"),
+            ("🟡 MEDIANA (escenario base)", pct_50, ret_med, val_med, "#f5c518"),
+            ("🔴 PESIMISTA (5% inferior)",  pct_5,  ret_pes, val_pes, "#ff3b5c"),
+        ]
+        for label, precio_f, ret, val, color in escenarios:
+            signo = "+" if ret >= 0 else ""
+            st.markdown(f"""
+            <div style="background:#111419;border:1px solid #1e2530;border-radius:8px;
+                        padding:14px 16px;margin-bottom:8px;">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10px;
+                          color:#4a5568;margin-bottom:8px;">{label}</div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                <div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:18px;
+                              font-weight:700;color:{color};">${precio_f:,.2f}</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                              color:{color};">{signo}{ret:.1f}%</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:10px;
+                              color:#4a5568;">inversión</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:16px;
+                              font-weight:600;color:{color};">${val:,.0f}</div>
+                </div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Volatilidad y parámetros usados
+        st.markdown(f"""
+        <div style="background:#0a0c10;border:1px solid #1e2530;border-radius:8px;
+                    padding:14px 16px;margin-top:4px;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;
+                      color:#4a5568;margin-bottom:10px;letter-spacing:1px;">PARÁMETROS DEL MODELO</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                      color:#6b7a90;line-height:2;">
+            Retorno diario μ: <b style="color:#c9d1d9;">{mu*100:+.4f}%</b><br>
+            Volatilidad σ:    <b style="color:#c9d1d9;">{sigma*100:.4f}%</b><br>
+            Vol. anual:       <b style="color:#c9d1d9;">{sigma*np.sqrt(252)*100:.1f}%</b><br>
+            Precio hoy:       <b style="color:#c9d1d9;">${S0:,.2f}</b><br>
+            Modelo:           <b style="color:#c9d1d9;">GBM</b>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#2d3748;
+                    margin-top:12px;line-height:1.6;">
+        ⚠ Simulación estadística basada en comportamiento histórico.<br>
+        No constituye asesoría financiera profesional.<br>
+        GBM = Movimiento Browniano Geométrico.
+        </div>
+        """, unsafe_allow_html=True)

@@ -290,9 +290,9 @@ if df.empty:
     st.error(f"No se encontraron datos para **{ticker_input}**. Verifica el símbolo.")
     st.stop()
 
-close = df["Close"]
-last  = float(close.iloc[-1])
-prev  = float(close.iloc[-2]) if len(close) > 1 else last
+close = df["Close"].squeeze()          # garantiza Serie 1D aunque yfinance devuelva DataFrame
+last  = float(close.iloc[-1].item() if hasattr(close.iloc[-1], "item") else close.iloc[-1])
+prev  = float(close.iloc[-2].item() if hasattr(close.iloc[-2], "item") else close.iloc[-2]) if len(close) > 1 else last
 chg   = last - prev
 pct   = chg / prev * 100
 

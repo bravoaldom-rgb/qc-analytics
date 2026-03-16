@@ -17,7 +17,7 @@ st.set_page_config(
 if st.session_state.get("authentication_status") is True:
     st.switch_page("pages/dashboard.py")
 
-# ── Generar velas aleatorias ───────────────────────────────────────────────────
+# ── Generar velas ──────────────────────────────────────────────────────────────
 random.seed(42)
 candles_html = ""
 for i in range(32):
@@ -26,8 +26,7 @@ for i in range(32):
     body_h = random.randint(18, 190)
     wick_t = random.randint(6, 38)
     wick_b = random.randint(3, 18)
-    green  = random.random() > 0.42
-    col    = "#00d4aa" if green else "#ff3b5c"
+    col    = "#00d4aa" if random.random() > 0.42 else "#ff3b5c"
     spd    = random.uniform(2.5, 8.0)
     dly    = random.uniform(0, 8)
     op     = random.uniform(0.10, 0.28)
@@ -42,15 +41,15 @@ for i in range(32):
 
 # ── Ticker tape ────────────────────────────────────────────────────────────────
 TICKERS = [
-    ("AAPL","$182.63","+2.34%",True), ("MSFT","$415.21","+1.12%",True),
-    ("TSLA","$234.15","-0.87%",False),("NVDA","$875.42","+4.21%",True),
-    ("AMZN","$192.87","+0.94%",True), ("META","$521.33","+1.67%",True),
-    ("GOOG","$172.54","-0.31%",False),("SPY", "$524.11","+0.72%",True),
-    ("BTC", "$67,421","+3.15%",True), ("ETH", "$3,842", "+2.08%",True),
-    ("AMX", "$14.23", "-1.24%",False),("BIMBO","$88.12","+0.88%",True),
-    ("QQQ", "$447.23","+1.45%",True), ("GLD", "$212.45","-0.19%",False),
-    ("JPM", "$213.67","+0.63%",True), ("CEMEX","$7.84","-2.11%",False),
-    ("WALMEX","$68.40","+1.33%",True),("IPC","$55,242","+0.61%",True),
+    ("AAPL","$182.63","+2.34%",True),  ("MSFT","$415.21","+1.12%",True),
+    ("TSLA","$234.15","-0.87%",False), ("NVDA","$875.42","+4.21%",True),
+    ("AMZN","$192.87","+0.94%",True),  ("META","$521.33","+1.67%",True),
+    ("GOOG","$172.54","-0.31%",False), ("SPY", "$524.11","+0.72%",True),
+    ("BTC", "$67,421","+3.15%",True),  ("ETH", "$3,842", "+2.08%",True),
+    ("AMX", "$14.23", "-1.24%",False), ("QQQ", "$447.23","+1.45%",True),
+    ("GLD", "$212.45","-0.19%",False), ("JPM", "$213.67","+0.63%",True),
+    ("CEMEX","$7.84", "-2.11%",False), ("WALMEX","$68.40","+1.33%",True),
+    ("IPC", "$55,242","+0.61%",True),  ("BIMBO","$88.12","+0.88%",True),
 ]
 tape_inner = ""
 for sym, price, pct, up in TICKERS * 5:
@@ -58,13 +57,13 @@ for sym, price, pct, up in TICKERS * 5:
     arr = "▲" if up else "▼"
     tape_inner += (
         f'<span style="margin:0 28px;white-space:nowrap;">'
-        f'<span style="color:#8892a4;font-size:11px;letter-spacing:1px;">{sym} </span>'
+        f'<span style="color:#6b7a90;font-size:11px;letter-spacing:1px;">{sym} </span>'
         f'<span style="color:#c9d1d9;font-size:11px;">{price} </span>'
         f'<span style="color:{col};font-size:11px;">{arr} {pct}</span>'
         f'</span>'
     )
 
-# ── CSS + fondo animado ────────────────────────────────────────────────────────
+# ── CSS ────────────────────────────────────────────────────────────────────────
 st.markdown(f"""
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Inter:wght@300;400;500;600&display=swap');
@@ -79,67 +78,47 @@ st.markdown(f"""
     --muted:   #4a5568;
   }}
 
-  /* ── Reset Streamlit ── */
   html, body {{
     background-color: var(--bg) !important;
     margin: 0; padding: 0;
   }}
-  [data-testid="stAppViewContainer"] {{
-    background: transparent !important;
-  }}
+  [data-testid="stAppViewContainer"],
   [data-testid="stMain"] {{
     background: transparent !important;
   }}
   [data-testid="stSidebar"],
   [data-testid="collapsedControl"],
   [data-testid="stDecoration"],
-  header[data-testid="stHeader"] {{
-    display: none !important;
-  }}
-  .block-container {{
-    padding-top: 0 !important;
-    max-width: 500px !important;
-  }}
+  header[data-testid="stHeader"] {{ display: none !important; }}
+  .block-container {{ padding-top: 0 !important; max-width: 480px !important; }}
 
-  /* ── Fondo fijo ── */
+  /* ── Fondo ── */
   .qc-bg {{
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    background: #0a0c10;
-    overflow: hidden;
+    position: fixed; inset: 0; z-index: 0;
+    background: #0a0c10; overflow: hidden;
   }}
-
-  /* Grid */
   .qc-grid {{
-    position: absolute;
-    inset: 0;
+    position: absolute; inset: 0;
     background-image:
       linear-gradient(rgba(0,212,170,0.04) 1px, transparent 1px),
       linear-gradient(90deg, rgba(0,212,170,0.04) 1px, transparent 1px);
     background-size: 60px 60px;
   }}
-
-  /* Gradiente central para legibilidad */
   .qc-vignette {{
-    position: absolute;
-    inset: 0;
+    position: absolute; inset: 0;
     background: radial-gradient(
       ellipse 70% 80% at 50% 50%,
-      rgba(10,12,16,0.88) 0%,
-      rgba(10,12,16,0.55) 60%,
+      rgba(10,12,16,0.92) 0%,
+      rgba(10,12,16,0.60) 55%,
       transparent 100%
     );
   }}
 
-  /* ── Velas ── */
+  /* Velas */
   .qc-c {{
-    position: absolute;
-    bottom: 56px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: center;
+    position: absolute; bottom: 56px;
+    display: flex; flex-direction: column;
+    justify-content: flex-end; align-items: center;
     transform-origin: bottom center;
     animation: qcPulse linear infinite alternate;
   }}
@@ -148,256 +127,190 @@ st.markdown(f"""
     100% {{ transform: scaleY(1.05); }}
   }}
 
-  /* ── Ticker tape ── */
-  .qc-tape-wrap {{
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 36px;
-    background: rgba(17,20,25,0.85);
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-    z-index: 2;
-  }}
-  .qc-tape {{
-    display: flex;
-    align-items: center;
-    font-family: 'JetBrains Mono', monospace;
-    white-space: nowrap;
-    animation: tickerScroll 80s linear infinite;
-  }}
-  @keyframes tickerScroll {{
-    0%   {{ transform: translateX(0); }}
-    100% {{ transform: translateX(-50%); }}
-  }}
-
-  /* ── Líneas de precio flotantes ── */
+  /* Líneas */
   .qc-line {{
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 1px;
-    opacity: 0.18;
-    animation: linePulse ease-in-out infinite alternate;
+    position: absolute; left: 0; right: 0;
+    height: 1px; animation: linePulse ease-in-out infinite alternate;
   }}
-  .qc-line-1 {{
-    top: 22%;
-    background: linear-gradient(90deg, transparent 0%, #00d4aa 30%, #00d4aa 70%, transparent 100%);
-    animation-duration: 4.2s;
-    animation-delay: 0s;
-  }}
-  .qc-line-2 {{
-    top: 38%;
-    background: linear-gradient(90deg, transparent 0%, #0090ff 30%, #0090ff 70%, transparent 100%);
-    animation-duration: 5.8s;
-    animation-delay: -2s;
-  }}
-  .qc-line-3 {{
-    top: 60%;
-    background: linear-gradient(90deg, transparent 0%, #a855f7 20%, #a855f7 80%, transparent 100%);
-    animation-duration: 3.5s;
-    animation-delay: -1s;
-  }}
+  .qc-line-1 {{ top:22%; background:linear-gradient(90deg,transparent,#00d4aa,transparent); animation-duration:4.2s; opacity:.15; }}
+  .qc-line-2 {{ top:40%; background:linear-gradient(90deg,transparent,#0090ff,transparent); animation-duration:5.8s; animation-delay:-2s; opacity:.12; }}
+  .qc-line-3 {{ top:62%; background:linear-gradient(90deg,transparent,#a855f7,transparent); animation-duration:3.5s; animation-delay:-1s; opacity:.10; }}
   @keyframes linePulse {{
-    0%   {{ opacity: 0.06; transform: scaleX(0.7); }}
-    100% {{ opacity: 0.22; transform: scaleX(1); }}
+    0%   {{ opacity:.04; transform:scaleX(.6); }}
+    100% {{ opacity:.20; transform:scaleX(1); }}
   }}
 
-  /* ── Puntos flotantes ── */
+  /* Puntos flotantes */
   .qc-dot {{
-    position: absolute;
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: #00d4aa;
-    opacity: 0.25;
+    position: absolute; width:3px; height:3px;
+    border-radius:50%; background:#00d4aa; opacity:.2;
     animation: floatUp linear infinite;
   }}
   @keyframes floatUp {{
-    0%   {{ transform: translateY(0);     opacity: 0.25; }}
-    100% {{ transform: translateY(-100vh); opacity: 0; }}
+    0%   {{ transform:translateY(0);     opacity:.2; }}
+    100% {{ transform:translateY(-100vh); opacity:0; }}
   }}
 
-  /* ── Content layer ── */
-  .qc-content {{
-    position: relative;
-    z-index: 10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 20px 80px 20px;
+  /* Ticker tape */
+  .qc-tape-wrap {{
+    position: absolute; bottom:0; left:0; right:0;
+    height:36px; background:rgba(17,20,25,.85);
+    border-top:1px solid var(--border);
+    display:flex; align-items:center;
+    overflow:hidden; z-index:2;
+  }}
+  .qc-tape {{
+    display:flex; align-items:center;
+    font-family:'JetBrains Mono',monospace; white-space:nowrap;
+    animation: tickerScroll 80s linear infinite;
+  }}
+  @keyframes tickerScroll {{
+    0%   {{ transform:translateX(0); }}
+    100% {{ transform:translateX(-50%); }}
   }}
 
   /* ── Logo ── */
   .qc-logo-wrap {{
-    text-align: center;
-    margin-bottom: 32px;
+    text-align:center; margin-bottom:28px;
+    position:relative; z-index:10;
   }}
   .qc-logo-main {{
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 56px;
-    font-weight: 700;
-    color: var(--accent);
-    letter-spacing: 8px;
-    line-height: 1;
-    text-shadow: 0 0 40px rgba(0,212,170,0.3);
+    font-family:'JetBrains Mono',monospace;
+    font-size:54px; font-weight:700;
+    color:var(--accent); letter-spacing:8px; line-height:1;
+    text-shadow:0 0 40px rgba(0,212,170,.35);
   }}
   .qc-logo-sub {{
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 5px;
-    margin-top: 4px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; color:var(--muted);
+    letter-spacing:5px; margin-top:4px;
   }}
   .qc-logo-desc {{
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    color: #5a6478;
-    margin-top: 12px;
-    letter-spacing: 0.3px;
+    font-family:'Inter',sans-serif;
+    font-size:14px; color:#5a6478;
+    margin-top:10px;
   }}
 
-  /* ── Card ── */
+  /* ── Cards ── */
   .auth-card {{
-    background: rgba(17, 20, 25, 0.90);
+    background: rgba(17,20,25,.92);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
-    border: 1px solid rgba(0,212,170,0.12);
-    border-radius: 16px;
-    padding: 36px 40px 32px 40px;
+    border: 1px solid rgba(0,212,170,.12);
+    border-radius: 14px;
+    padding: 32px 36px 28px 36px;
     width: 100%;
-    max-width: 460px;
-    box-shadow:
-      0 0 0 1px rgba(0,212,170,0.04),
-      0 8px 60px rgba(0,0,0,0.7),
-      0 0 80px rgba(0,212,170,0.03);
+    box-shadow: 0 8px 60px rgba(0,0,0,.7), 0 0 0 1px rgba(0,212,170,.04);
+    position: relative; z-index: 10;
+  }}
+  .card-title {{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; font-weight:700;
+    letter-spacing:2.5px; color:var(--accent);
+    text-transform:uppercase; margin-bottom:20px;
+    display:flex; align-items:center; gap:8px;
+  }}
+  .card-title::after {{
+    content:'';
+    flex:1; height:1px;
+    background:linear-gradient(90deg,var(--border),transparent);
   }}
 
-  /* ── Tabs ── */
-  div[data-baseweb="tab-list"] {{
-    background: rgba(6,8,16,0.8) !important;
-    border-radius: 10px !important;
-    padding: 4px !important;
-    border: 1px solid var(--border) !important;
-    margin-bottom: 28px !important;
-    gap: 0 !important;
+  .divider-section {{
+    position:relative; z-index:10;
+    text-align:center; margin:20px 0;
+    display:flex; align-items:center; gap:14px;
   }}
-  div[data-baseweb="tab"] {{
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 11px !important;
-    letter-spacing: 1.5px !important;
-    color: var(--muted) !important;
-    border-radius: 7px !important;
-    padding: 10px 0 !important;
-    flex: 1 !important;
-    justify-content: center !important;
-    transition: color 0.2s !important;
+  .divider-line {{
+    flex:1; height:1px; background:var(--border);
   }}
-  div[data-baseweb="tab"][aria-selected="true"] {{
-    background: rgba(0,212,170,0.08) !important;
-    color: var(--accent) !important;
-    border-bottom: none !important;
+  .divider-text {{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px; color:var(--muted);
+    letter-spacing:2px; white-space:nowrap;
   }}
-  div[data-baseweb="tab-highlight"],
-  div[data-baseweb="tab-border"] {{ display: none !important; }}
 
   /* ── Inputs ── */
   .stTextInput > div > div > input {{
-    background: rgba(6,8,16,0.9) !important;
+    background: rgba(6,8,16,.9) !important;
     border: 1px solid var(--border) !important;
     color: var(--text) !important;
-    font-family: 'JetBrains Mono', monospace !important;
+    font-family: 'JetBrains Mono',monospace !important;
     font-size: 13px !important;
     border-radius: 8px !important;
     padding: 10px 14px !important;
-    transition: border-color 0.2s, box-shadow 0.2s !important;
+    transition: border-color .2s, box-shadow .2s !important;
   }}
   .stTextInput > div > div > input:focus {{
     border-color: var(--accent) !important;
-    box-shadow: 0 0 0 3px rgba(0,212,170,0.10) !important;
+    box-shadow: 0 0 0 3px rgba(0,212,170,.10) !important;
     outline: none !important;
   }}
   label[data-testid="stWidgetLabel"] p {{
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 10px !important;
-    color: var(--muted) !important;
-    letter-spacing: 1.5px !important;
-    text-transform: uppercase !important;
+    font-family: 'JetBrains Mono',monospace !important;
+    font-size: 10px !important; color: var(--muted) !important;
+    letter-spacing: 1.5px !important; text-transform: uppercase !important;
   }}
 
-  /* ── Botón ── */
+  /* ── Botón principal (login) ── */
   .stButton > button {{
     background: var(--accent) !important;
-    border: none !important;
-    color: #0a0c10 !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 12px !important;
-    font-weight: 700 !important;
-    letter-spacing: 2px !important;
-    border-radius: 8px !important;
-    padding: 12px 24px !important;
-    width: 100% !important;
-    margin-top: 6px !important;
-    transition: all 0.2s !important;
-    box-shadow: 0 4px 20px rgba(0,212,170,0.15) !important;
+    border: none !important; color: #0a0c10 !important;
+    font-family: 'JetBrains Mono',monospace !important;
+    font-size: 12px !important; font-weight: 700 !important;
+    letter-spacing: 2px !important; border-radius: 8px !important;
+    padding: 12px 24px !important; width: 100% !important;
+    margin-top: 6px !important; transition: all .2s !important;
+    box-shadow: 0 4px 20px rgba(0,212,170,.15) !important;
   }}
   .stButton > button:hover {{
-    opacity: 0.88 !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 6px 28px rgba(0,212,170,0.28) !important;
+    opacity:.88 !important; transform:translateY(-1px) !important;
+    box-shadow: 0 6px 28px rgba(0,212,170,.28) !important;
   }}
-  .stButton > button:active {{
-    transform: translateY(0) !important;
+  .stButton > button:active {{ transform:translateY(0) !important; }}
+
+  /* ── Botón secundario (registro) ── */
+  .stFormSubmitButton > button {{
+    background: transparent !important;
+    border: 1px solid var(--accent) !important;
+    color: var(--accent) !important;
+    font-family: 'JetBrains Mono',monospace !important;
+    font-size: 12px !important; font-weight: 600 !important;
+    letter-spacing: 2px !important; border-radius: 8px !important;
+    padding: 11px 24px !important; width: 100% !important;
+    margin-top: 6px !important; transition: all .2s !important;
+  }}
+  .stFormSubmitButton > button:hover {{
+    background: rgba(0,212,170,.08) !important;
+    box-shadow: 0 0 0 1px var(--accent) !important;
   }}
 
-  /* ── Alerts ── */
+  /* Alerts */
   .stAlert {{
     border-radius: 8px !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 12px !important;
-    border: none !important;
-    background: rgba(6,8,16,0.8) !important;
+    font-family: 'JetBrains Mono',monospace !important;
+    font-size: 12px !important; border: none !important;
   }}
+  /* Ocultar form name vacío */
+  [data-testid="stForm"] > div:first-child > div:first-child:empty {{ display:none; }}
 </style>
 
-<!-- ── FONDO ANIMADO ─────────────────────────────────── -->
+<!-- FONDO -->
 <div class="qc-bg">
-
-  <!-- Grid -->
   <div class="qc-grid"></div>
-
-  <!-- Líneas de precio -->
   <div class="qc-line qc-line-1"></div>
   <div class="qc-line qc-line-2"></div>
   <div class="qc-line qc-line-3"></div>
-
-  <!-- Velas -->
   {candles_html}
-
-  <!-- Puntos flotantes -->
   <div class="qc-dot" style="left:12%;animation-duration:12s;animation-delay:-3s;"></div>
   <div class="qc-dot" style="left:27%;animation-duration:18s;animation-delay:-7s;"></div>
   <div class="qc-dot" style="left:45%;animation-duration:15s;animation-delay:-1s;"></div>
   <div class="qc-dot" style="left:63%;animation-duration:20s;animation-delay:-9s;"></div>
-  <div class="qc-dot" style="left:78%;animation-duration:13s;animation-delay:-5s;"></div>
-  <div class="qc-dot" style="left:91%;animation-duration:16s;animation-delay:-11s;"></div>
-
-  <!-- Viñeta central -->
+  <div class="qc-dot" style="left:82%;animation-duration:13s;animation-delay:-5s;"></div>
   <div class="qc-vignette"></div>
-
-  <!-- Ticker tape -->
   <div class="qc-tape-wrap">
-    <div class="qc-tape">
-      {tape_inner}
-      {tape_inner}
-    </div>
+    <div class="qc-tape">{tape_inner}{tape_inner}</div>
   </div>
-
 </div>
 """, unsafe_allow_html=True)
 
@@ -410,11 +323,7 @@ def load_config():
             return yaml.load(f, Loader=SafeLoader)
     return {
         "credentials": {"usernames": {}},
-        "cookie": {
-            "expiry_days": 30,
-            "key": "qc_analytics_secret_key_2025",
-            "name": "qc_auth",
-        },
+        "cookie": {"expiry_days": 30, "key": "qc_secret_2025", "name": "qc_auth"},
         "preauthorized": {"emails": []},
     }
 
@@ -422,7 +331,7 @@ def save_config(cfg):
     with open(CREDS_FILE, "w") as f:
         yaml.dump(cfg, f, default_flow_style=False)
 
-config      = load_config()
+config        = load_config()
 authenticator = stauth.Authenticate(
     config["credentials"],
     config["cookie"]["name"],
@@ -439,48 +348,71 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ── Card ───────────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# SECCIÓN 1 — INICIAR SESIÓN
+# ══════════════════════════════════════════════════════════════════════════════
 st.markdown('<div class="auth-card">', unsafe_allow_html=True)
+st.markdown('<div class="card-title">Iniciar sesión</div>', unsafe_allow_html=True)
 
-tab_login, tab_register = st.tabs(["  INICIAR SESIÓN  ", "  CREAR CUENTA  "])
+try:
+    authenticator.login(location="main", key="login_form")
+except Exception as e:
+    st.error(f"Error: {e}")
 
-# ══ LOGIN ══════════════════════════════════════════════════════════════════════
-with tab_login:
-    try:
-        authenticator.login(location="main", key="login_form")
-    except Exception as e:
-        st.error(f"Error: {e}")
+status = st.session_state.get("authentication_status")
+if status is True:
+    st.switch_page("pages/dashboard.py")
+elif status is False:
+    st.error("⚠ Usuario o contraseña incorrectos.")
 
-    status = st.session_state.get("authentication_status")
-    if status is True:
-        st.switch_page("pages/dashboard.py")
-    elif status is False:
-        st.error("⚠ Usuario o contraseña incorrectos.")
+st.markdown('</div>', unsafe_allow_html=True)
 
-# ══ REGISTRO ═══════════════════════════════════════════════════════════════════
-with tab_register:
-    try:
-        result = authenticator.register_user(
-            location="main",
-            key="register_form",
-            fields={
-                "Form name":       "",
-                "Name":            "Nombre completo",
-                "Email":           "Correo electrónico",
-                "Username":        "Usuario",
-                "Password":        "Contraseña",
-                "Repeat password": "Confirmar contraseña",
-                "Register":        "CREAR CUENTA →",
-            },
-        )
-        if result and result[1]:
-            save_config(config)
-            st.success("✅ Cuenta creada. Inicia sesión arriba.")
-    except Exception as e:
-        err = str(e).lower()
-        if "already" in err or "registered" in err or "existe" in err:
-            st.warning("⚠ Ese usuario o correo ya existe.")
-        else:
-            st.error(f"Error: {e}")
+# ── Divisor ────────────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="divider-section">
+  <div class="divider-line"></div>
+  <div class="divider-text">¿NO TIENES CUENTA?</div>
+  <div class="divider-line"></div>
+</div>
+""", unsafe_allow_html=True)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECCIÓN 2 — CREAR CUENTA (formulario propio — sin captcha, sin password hint)
+# ══════════════════════════════════════════════════════════════════════════════
+st.markdown('<div class="auth-card">', unsafe_allow_html=True)
+st.markdown('<div class="card-title">Crear cuenta</div>', unsafe_allow_html=True)
+
+with st.form("register_form", clear_on_submit=True):
+    nombre   = st.text_input("Nombre completo")
+    usuario  = st.text_input("Usuario")
+    correo   = st.text_input("Correo electrónico")
+    pwd      = st.text_input("Contraseña",         type="password")
+    pwd2     = st.text_input("Confirmar contraseña", type="password")
+    submit   = st.form_submit_button("CREAR CUENTA →")
+
+if submit:
+    # Validaciones
+    if not all([nombre, usuario, correo, pwd, pwd2]):
+        st.error("⚠ Completa todos los campos.")
+    elif pwd != pwd2:
+        st.error("⚠ Las contraseñas no coinciden.")
+    elif len(pwd) < 6:
+        st.error("⚠ La contraseña debe tener mínimo 6 caracteres.")
+    elif usuario in config["credentials"]["usernames"]:
+        st.warning("⚠ Ese nombre de usuario ya existe.")
+    elif any(
+        u["email"] == correo
+        for u in config["credentials"]["usernames"].values()
+    ):
+        st.warning("⚠ Ese correo ya está registrado.")
+    else:
+        hashed = stauth.Hasher([pwd]).generate()[0]
+        config["credentials"]["usernames"][usuario] = {
+            "name":     nombre,
+            "email":    correo,
+            "password": hashed,
+        }
+        save_config(config)
+        st.success("✅ Cuenta creada. Ya puedes iniciar sesión arriba.")
 
 st.markdown('</div>', unsafe_allow_html=True)

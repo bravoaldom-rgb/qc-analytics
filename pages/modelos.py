@@ -503,7 +503,7 @@ with tab_mc:
         if st.session_state.get("mc_sims") not in [1000, 2000, 5000, 10000]:
             st.session_state["mc_sims"] = 1000
         n_sims = st.select_slider(
-            "SIMULACIONES", options=[1000, 2000, 5000, 10000], value=1000,
+            "SIMULACIONES", options=[1000, 2000, 5000, 10000],
             key="mc_sims"
         )
     with ctrl2:

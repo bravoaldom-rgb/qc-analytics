@@ -407,7 +407,8 @@ else:
         elif any(u["email"] == correo for u in config["credentials"]["usernames"].values()):
             st.error("Ese correo ya está registrado.")
         else:
-            hashed = stauth.Hasher([pwd]).generate()[0]
+            import bcrypt
+            hashed = bcrypt.hashpw(pwd.encode(), bcrypt.gensalt()).decode()
             config["credentials"]["usernames"][usuario] = {
                 "name": nombre, "email": correo, "password": hashed,
             }
